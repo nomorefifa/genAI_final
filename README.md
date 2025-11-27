@@ -47,6 +47,8 @@ pip install -r requirements.txt
 OPENAI_API_KEY=your-api-key-here
 EMBED_MODEL=text-embedding-3-small
 CHAT_MODEL=gpt-4o-mini
+GOOGLE_API_KEY = your-google-search-api
+GOOGLE_SEARCH_ENGINE_ID = your-google-search-engine-id
 ```
 
 ### 4. 환경 테스트
