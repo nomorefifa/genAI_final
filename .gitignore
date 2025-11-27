@@ -9,7 +9,7 @@ __pycache__/
 .Python
 
 # Virtual Environment (중요!)
-venv/
+genAI/
 env/
 ENV/
 .venv
