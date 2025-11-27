@@ -1,0 +1,26 @@
+# LLM & API
+openai>=1.0.0
+python-dotenv>=1.0.0
+
+# RAG
+chromadb>=0.4.0
+langchain-text-splitters>=0.2.0
+PyPDF2>=3.0.0
+sentence-transformers>=2.2.0  # choice: local embedding
+
+# LangGraph
+langgraph>=0.0.40
+langgraph-checkpoint>=0.0.1
+
+# Tool
+pydantic>=2.0.0
+requests>=2.31.0
+python-dateutil>=2.8.0
+
+# UI
+gradio>=4.0.0
+fastapi>=0.104.0
+uvicorn>=0.24.0
+
+# utility
+numpy>=1.24.0
