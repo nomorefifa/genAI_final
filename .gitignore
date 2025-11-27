@@ -1,6 +1,5 @@
 # API Keys
 .env
-*.env
 
 # Python
 __pycache__/
