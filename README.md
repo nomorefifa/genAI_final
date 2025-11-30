@@ -17,15 +17,36 @@ LangGraph + RAG + Memory를 활용한 수업 자료 검색 Agent
 
 ## 프로젝트 구조
 ```
-project_root/
-├── data/                # PDF 원본
+finalPJ/
 ├── src/
-│   ├── rag/            # RAG 시스템
-│   ├── tools/          # Tool 구현
-│   ├── memory/         # Memory 시스템
-│   ├── graph/          # LangGraph Agent
-│   └── ui/             # Gradio UI
-└── scripts/            # 유틸리티 스크립트
+│   ├── graph/              # LangGraph Agent 엔진
+│   │   ├── state.py        # AgentState 정의
+│   │   ├── nodes.py        # LLM, Tool 노드
+│   │   └── agent.py        # StateGraph 생성
+│   │
+│   ├── tools/              # Tool Layer
+│   │   ├── tool_definitions.py  # Pydantic Input Models + ToolSpec
+│   │   ├── tool_registry.py     # ToolRegistry 클래스
+│   │   ├── rag_tool.py          # RAG 검색 (with Reranking)
+│   │   ├── memory_tool.py       # read_memory, write_memory
+│   │   └── google_search_tool.py
+│   │
+│   ├── memory/             # Memory Layer
+│   │   └── reflection.py   # Memory Extractor (자동 저장)
+│   │
+│   ├── rag/                # RAG Layer
+│   │   └── utils.py        # 임베딩 유틸리티
+│   │
+│   └── ui/                 # UI Layer
+│       └── gradio_app.py   # Gradio 채팅 인터페이스
+│
+├── chroma_db/              # ChromaDB Persistent Storage
+│   ├── documents/          # RAG 문서 컬렉션
+│   └── memory_collection/  # Memory 컬렉션
+│
+├── test/                   # ChromaDB Persistent Storage
+    ├── test_integration.py # 통합 테스트
+    └── test_reranking.py   # Reranking 성능 테스트
 ```
 
 ## 설치 방법
@@ -49,11 +70,6 @@ EMBED_MODEL=text-embedding-3-small
 CHAT_MODEL=gpt-4o-mini
 GOOGLE_API_KEY = your-google-search-api
 GOOGLE_SEARCH_ENGINE_ID = your-google-search-engine-id
-```
-
-### 4. 환경 테스트
-```bash
-python test_setup.py
 ```
 
 ## 요구사항
