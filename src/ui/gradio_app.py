@@ -139,11 +139,25 @@ def chat_function(message: str, history: List[List[str]]) -> Generator[str, None
     except Exception as e:
         yield f"❌ 에러 발생: {str(e)}"
     
-    # 메모리 자동 저장 (백그라운드)
+    # ===== Memory Write 파이프라인 (자동 저장) =====
     try:
-        auto_save_recent_memories(CONVERSATION_HISTORY, recent_n=6, verbose=False)
+        print(f"\n💾 Memory Write 파이프라인 실행:")
+        print(f"   📝 최근 {min(6, len(CONVERSATION_HISTORY))}개 메시지 분석 중...")
+
+        saved_count = auto_save_recent_memories(
+            messages=CONVERSATION_HISTORY,
+            recent_n=6,            # 최근 6개 메시지만 분석
+            min_importance=3,      # 중요도 3 이상만 저장
+            verbose=False          # 상세 로그 비활성화
+        )
+
+        if saved_count > 0:
+            print(f"   ✅ {saved_count}개의 중요한 정보를 장기 기억에 저장했습니다.")
+        else:
+            print(f"   ℹ️  저장할 중요한 정보가 없습니다.")
+
     except Exception as e:
-        print(f"⚠️ 메모리 저장 실패: {e}")
+        print(f"   ⚠️ 메모리 저장 실패: {e}")
 
 
 # =============================================================================

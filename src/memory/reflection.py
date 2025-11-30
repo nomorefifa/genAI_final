@@ -55,9 +55,11 @@ MEMORY_EXTRACTOR_PROMPT = """\
    예시: "ReAct 패턴: Thought-Action-Observation 순서로 작동하는 AI Agent 방법론"
 
 **중요도 판단 기준:**
-- high: 매우 중요한 정보 (이름, 전공, 중요한 결정사항)
-- medium: 일반적으로 유용한 정보 (학습 내용, 선호사항)
-- low: 참고용 정보 (간단한 대화 내용)
+- 5: 매우 중요한 정보 (이름, 전공, 중요한 결정사항, 장기 목표)
+- 4: 중요한 정보 (학습 내용, 선호사항, 프로젝트 정보)
+- 3: 보통 정보 (일반적인 대화 내용)
+- 2: 약간 중요한 정보 (참고용 정보)
+- 1: 낮은 중요도 (단순한 대화)
 
 **출력 형식:**
 JSON 배열로 반환하세요. 저장할 정보가 없으면 빈 배열 []을 반환하세요.
@@ -66,7 +68,7 @@ JSON 배열로 반환하세요. 저장할 정보가 없으면 빈 배열 []을 �
   {
     "content": "저장할 내용",
     "memory_type": "profile | episodic | knowledge",
-    "importance": "low | medium | high"
+    "importance": 1~5 (정수)
   },
   ...
 ]
@@ -84,15 +86,15 @@ JSON 배열로 반환하세요. 저장할 정보가 없으면 빈 배열 []을 �
 
 def extract_memories_from_conversation(
     messages: List[Dict[str, Any]],
-    min_importance: str = "medium"
+    min_importance: int = 3
 ) -> List[Dict[str, str]]:
     """
     대화 내용을 분석하여 저장할 정보 추출
-    
+
     Args:
         messages: 대화 메시지 리스트
-        min_importance: 최소 중요도 ("low", "medium", "high")
-    
+        min_importance: 최소 중요도 (1-5, 기본값 3)
+
     Returns:
         저장할 메모리 정보 리스트
     """
@@ -132,16 +134,13 @@ def extract_memories_from_conversation(
         result_text = result_text.replace("```json", "").replace("```", "").strip()
         
         memories = json.loads(result_text)
-        
-        # 중요도 필터링
-        importance_levels = {"low": 1, "medium": 2, "high": 3}
-        min_level = importance_levels.get(min_importance, 2)
-        
+
+        # 중요도 필터링 (1-5 정수 기준)
         filtered_memories = [
             m for m in memories
-            if importance_levels.get(m.get("importance", "low"), 1) >= min_level
+            if m.get("importance", 1) >= min_importance
         ]
-        
+
         return filtered_memories
     
     except json.JSONDecodeError as e:
@@ -160,17 +159,17 @@ def extract_memories_from_conversation(
 
 def auto_save_memories(
     messages: List[Dict[str, Any]],
-    min_importance: str = "medium",
+    min_importance: int = 3,
     verbose: bool = True
 ) -> int:
     """
     대화 내용을 분석하여 자동으로 메모리 저장
-    
+
     Args:
         messages: 대화 메시지 리스트
-        min_importance: 최소 중요도
+        min_importance: 최소 중요도 (1-5, 기본값 3)
         verbose: 저장 과정 출력 여부
-    
+
     Returns:
         저장된 메모리 개수
     """
@@ -219,19 +218,19 @@ def auto_save_memories(
 def auto_save_recent_memories(
     messages: List[Dict[str, Any]],
     recent_n: int = 10,
-    min_importance: str = "medium",
+    min_importance: int = 3,
     verbose: bool = True
 ) -> int:
     """
     최근 N개 메시지만 분석하여 메모리 저장
     (긴 대화에서 매번 전체 분석하면 비효율적)
-    
+
     Args:
         messages: 전체 대화 메시지
         recent_n: 분석할 최근 메시지 개수
-        min_importance: 최소 중요도
+        min_importance: 최소 중요도 (1-5, 기본값 3)
         verbose: 출력 여부
-    
+
     Returns:
         저장된 메모리 개수
     """
@@ -265,6 +264,6 @@ if __name__ == "__main__":
     print("-" * 60)
     
     # 메모리 자동 저장 테스트
-    saved_count = auto_save_memories(test_conversation, min_importance="low")
+    saved_count = auto_save_memories(test_conversation, min_importance=1)
     
     print(f"\n✅ 테스트 완료! {saved_count}개 메모리 저장됨")

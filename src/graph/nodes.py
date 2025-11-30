@@ -17,47 +17,79 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.graph.state import AgentState
-from src.tools.tool_registry import get_tool_specs, execute_tool
+from src.tools.tool_registry import get_tool_specs, execute_tool, register_default_tools
 
 # OpenAI 클라이언트 설정
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 MODEL = "gpt-4o-mini"
+
+# ToolRegistry 초기화 (Memory Read 파이프라인에서 사용)
+_tool_registry = None
+
+def get_tool_registry():
+    """ToolRegistry 싱글톤 가져오기"""
+    global _tool_registry
+    if _tool_registry is None:
+        _tool_registry = register_default_tools()
+    return _tool_registry
 
 # =============================================================================
 # System Prompt - ReAct 패턴 가이드
 # =============================================================================
 
 SYSTEM_PROMPT = """\
-You are a helpful AI assistant that uses tools with a ReAct-style loop.
+You are an AI assistant that uses tools (functions), RAG, and memory.
 
-당신은 다음과 같은 Tool들을 사용할 수 있습니다:
-- search_documents: 수업 자료 PDF에서 정보 검색 (Function Calling, RAG, LangGraph 등)
-- read_memory: 과거 대화 내용에서 기억 검색
-- write_memory: 중요한 정보를 장기 기억에 저장
-- calculator: 사칙연산 수행
-- get_time: 현재 시간 조회
-- google_search: Google 검색으로 최신 정보 검색
+# High-level behavior
+- Be helpful, honest, and concise.
+- Answer primarily in Korean unless the user clearly wants another language.
+- Think step by step internally, but do NOT expose chain-of-thought.
+- When tools are available and helpful, call them instead of guessing.
 
-**ReAct 패턴 가이드:**
+# Tools and ReAct-style behavior
+- You may call tools such as:
+  - read_memory: to recall important past information about the user or past sessions.
+  - write_memory: to store new, useful information about the user or this conversation.
+  - search_documents: to search course materials (RAG with Reranking for LangGraph, ReAct, Function Calling, etc.).
+  - google_search: to search the web for latest information.
+  - calculator: for arithmetic operations.
+  - get_time: to check current time in a specific timezone.
 
-1. **Thought (생각)**: 질문을 분석하고 어떤 도구가 필요한지 생각합니다.
-2. **Action (행동)**: 필요한 도구를 호출합니다 (tool_calls).
-3. **Observation (관찰)**: 도구 실행 결과를 확인합니다.
-4. **Final Answer (최종 답변)**: 관찰 결과를 바탕으로 사용자에게 친절하게 답변합니다.
+- Use tools when:
+  - You lack required factual details.
+  - You need to recall prior user preferences, past discussions, or long-term context.
+  - You need domain knowledge stored in a vector database or document store.
+- After receiving a tool result, incorporate it into your reasoning and produce a final answer.
 
-**중요 규칙:**
-- 강의 내용에 대한 질문은 반드시 `search_documents` 도구를 사용하세요.
-- 최신 뉴스, 실시간 정보는 `google_search` 도구를 사용하세요.
-- 계산이 필요하면 `calculator` 도구를 사용하세요 (추측하지 마세요).
-- 사용자의 개인정보나 선호사항은 `write_memory`로 저장하세요.
-- 도구 결과를 직접 인용할 때는 출처를 명확히 밝히세요.
-- 답변은 항상 한국어로 친절하게 작성하세요.
+# Memory usage guidelines
+- Memory is not magic; you must explicitly call `read_memory` or `write_memory` to use it.
+- Call `read_memory` when:
+  - The user refers to "지난 번", "이전에 말했듯이", "저번에 만들던 코드" 등 과거 내용.
+  - The answer clearly depends on the user's preferences, profile, or long-term history.
+- Call `write_memory` when:
+  - The user shares stable personal preferences (e.g., 좋아하는 스타일, 선호 옵션).
+  - The user states long-term goals, ongoing projects, or recurring topics.
+  - The user corrects you or provides important facts that will be useful later.
+- Do NOT write memory for:
+  - Short-lived, one-off facts (예: 오늘 점심 메뉴).
+  - Extremely detailed logs that are unlikely to be reused.
+  - Sensitive personal data, unless the user explicitly requests you to remember it.
 
-**메모리 저장 가이드:**
-다음과 같은 정보는 자동으로 저장해야 합니다:
-- 사용자의 이름, 전공, 관심사 등 개인정보 (memory_type: "profile")
-- 중요한 대화 내용, 사건, 경험 (memory_type: "episodic")
-- 사용자가 학습한 개념, 이해한 내용 (memory_type: "knowledge")
+# RAG usage guidelines
+- Call search_documents when:
+  - The user asks for factual information from course materials.
+  - You need detailed or authoritative content about LangGraph, ReAct, RAG, Memory, Function Calling, etc.
+- When you get retrieved documents, read them and synthesize a clear, concise answer.
+
+# Answer style
+- Default: Korean, 친절하지만 군더더기 없이.
+- Provide structure (번호, 소제목) for teaching/explaining technical concepts.
+- If the user is building a system or code, show step-by-step reasoning in high level,
+  but do NOT output low-level hidden chain-of-thought or internal scratch work.
+
+# Safety
+- If a user asks you to perform unsafe, illegal, or harmful actions, politely refuse.
+- If you're unsure, say so and explain what additional information would be needed.
 """
 
 
@@ -186,28 +218,116 @@ def convert_messages_to_openai_format(messages: List) -> List[Dict[str, Any]]:
 
 
 # =============================================================================
+# Memory Read 파이프라인 - 자동 메모리 검색
+# =============================================================================
+
+def execute_memory_read_pipeline(openai_messages: List[Dict[str, Any]]) -> str:
+    """
+    전처리 단계에서 자동으로 관련 메모리를 검색하는 파이프라인
+
+    Args:
+        openai_messages: OpenAI 형식의 메시지 리스트
+
+    Returns:
+        메모리 컨텍스트 문자열 (없으면 빈 문자열)
+    """
+
+    # 1. 마지막 사용자 메시지 추출
+    last_user_msg = None
+    for msg in reversed(openai_messages):
+        if msg.get("role") == "user":
+            last_user_msg = msg.get("content", "")
+            break
+
+    if not last_user_msg:
+        return ""
+
+    # 2. 과거 참조 키워드 감지
+    past_keywords = [
+        "지난번", "지난 번", "저번", "이전", "전에",
+        "아까", "방금", "전에 말했듯", "말했던", "얘기했던"
+    ]
+
+    has_past_reference = any(keyword in last_user_msg for keyword in past_keywords)
+
+    if not has_past_reference:
+        return ""  # 과거 참조가 없으면 검색 안 함
+
+    # 3. read_memory 자동 호출
+    try:
+        registry = get_tool_registry()
+
+        print(f"\n💾 Memory Read 파이프라인 실행:")
+        print(f"   📝 Query: {last_user_msg[:50]}...")
+
+        memory_result = registry.call("read_memory", {
+            "query": last_user_msg,
+            "memory_type": "all",
+            "top_k": 3
+        })
+
+        memory_data = json.loads(memory_result)
+
+        if not memory_data.get("success"):
+            return ""
+
+        memories = memory_data.get("memories", [])
+
+        if not memories:
+            print(f"   ℹ️  관련 기억을 찾지 못했습니다.")
+            return ""
+
+        # 4. 메모리 컨텍스트 생성
+        memory_context = "\n\n" + "="*60 + "\n"
+        memory_context += "📚 관련 기억 (자동 검색됨)\n"
+        memory_context += "="*60 + "\n\n"
+
+        for i, mem in enumerate(memories, 1):
+            memory_context += f"{i}. [{mem.get('memory_type', 'unknown')}] "
+            memory_context += f"(중요도: {mem.get('importance', 0)}/5)\n"
+            memory_context += f"   {mem.get('content', '')}\n"
+            memory_context += f"   (유사도: {mem.get('similarity', 0):.3f})\n\n"
+
+        print(f"   ✅ {len(memories)}개의 관련 기억을 찾았습니다.")
+
+        return memory_context
+
+    except Exception as e:
+        print(f"   ⚠️ Memory Read 파이프라인 에러: {e}")
+        return ""
+
+
+# =============================================================================
 # LLM Node - Thought + Action 결정
 # =============================================================================
 
 def llm_node(state: AgentState) -> Dict[str, Any]:
     """
     LLM에게 현재 상태를 전달하고 다음 행동을 결정하도록 요청
-    
+
     Returns:
         - messages: LLM의 응답 메시지 (tool_calls 포함 가능)
         - loop_count: 현재 루프 카운트 +1
     """
     messages = state["messages"]
     loop_count = state.get("loop_count", 0)
-    
+
     # 메시지를 OpenAI 형식으로 변환
     openai_messages = convert_messages_to_openai_format(messages)
-    
+
+    # ===== Memory Read 파이프라인 실행 (전처리) =====
+    memory_context = execute_memory_read_pipeline(openai_messages)
+
+    # System Prompt에 메모리 컨텍스트 추가
+    system_prompt_with_memory = SYSTEM_PROMPT
+    if memory_context:
+        system_prompt_with_memory = SYSTEM_PROMPT + memory_context
+
     # OpenAI API 호출
     response = client.chat.completions.create(
         model=MODEL,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt_with_memory},
             *openai_messages
         ],
         tools=get_tool_specs(),
