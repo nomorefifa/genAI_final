@@ -126,20 +126,3 @@ SEARCH_DOCUMENTS_SPEC = {
         }
     }
 }
-
-
-# 테스트 코드
-if __name__ == "__main__":
-    print("="*50)
-    print("search_documents Tool 테스트")
-    print("="*50)
-    
-    # 테스트 1
-    print("\n[테스트 1] LangGraph State 설계")
-    result = search_documents("LangGraph State 설계 방법", n_results=3)
-    print(result)
-    
-    # 테스트 2
-    print("\n[테스트 2] ReAct 패턴")
-    result = search_documents("ReAct 패턴이란?", n_results=3)
-    print(result)

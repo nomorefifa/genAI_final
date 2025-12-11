@@ -161,7 +161,7 @@ def create_gradio_interface():
         <div class="header">
             <h1>🤖 ReAct Agent Chat</h1>
             <p>LangGraph 기반 ReAct 패턴 AI Assistant</p>
-            <p><em>강의 자료 검색 | 메모리 저장 | 계산 | 시간 조회</em></p>
+            <p>생성형AI응용 강의자료 pdf를 이용한 강의내용 검색</p>
         </div>
         """)
         
@@ -173,7 +173,7 @@ def create_gradio_interface():
                 avatar_images=(None, "🤖")
             ),
             textbox=gr.Textbox(
-                placeholder="메시지를 입력하세요... (예: LangGraph가 뭐야?)",
+                placeholder="메시지를 입력하세요...",
                 container=False,
                 scale=7
             ),
@@ -191,21 +191,10 @@ def create_gradio_interface():
             cache_examples=False,
         )
         
-        gr.Markdown("""
-        ---
-        ### 💡 사용 가능한 기능
-        
-        - **📚 강의 자료 검색**: Function Calling, RAG, LangGraph 등 수업 내용 질문
-        - **💾 메모리 관리**: 개인 학습 정보 자동 저장 및 조회
-        - **🧮 계산**: 사칙연산 및 수학 문제
-        - **⏰ 시간 조회**: 세계 주요 도시 시간 확인
-        - **🌐 웹 검색**: 최신 정보 및 뉴스 검색
-        """)
-        
         gr.HTML("""
         <div style="text-align: center; padding: 20px; color: #666;">
-            <p>🎓 생성형AI응용 기말 프로젝트</p>
-            <p><em>Powered by LangGraph + OpenAI + ChromaDB</em></p>
+            <p>생성형AI응용 기말 프로젝트</p>
+            <p><em>Powered by Team abab (이강민, 정준영, 박경훈) </em></p>
         </div>
         """)
         
