@@ -106,29 +106,3 @@ def google_search(query: str, num_results: int = 5) -> str:
             "error": f"Unexpected error: {str(e)}",
             "query": query
         }, ensure_ascii=False, indent=2)
-    
-    # =============================================================================
-# 테스트 코드
-# =============================================================================
-
-if __name__ == "__main__":
-    print("🧪 Google Search Tool 테스트\n")
-    
-    # 테스트 1: 기본 검색
-    print("1️⃣ 기본 검색:")
-    result = google_search("LangGraph tutorial", num_results=3)
-    print(result)
-    
-    print("\n" + "="*60)
-    
-    # 테스트 2: 한글 검색
-    print("\n2️⃣ 한글 검색:")
-    result = google_search("생성형AI 최신 뉴스", num_results=3)
-    print(result)
-    
-    print("\n✅ 테스트 완료!")
-    print("\n💡 Tip: .env 파일에 다음을 추가하세요:")
-    print("   GOOGLE_API_KEY=your-google-api-key")
-    print("   GOOGLE_SEARCH_ENGINE_ID=your-search-engine-id")
-    print("\n   API 키 받기: https://developers.google.com/")
-    print("   Search Engine 생성: https://programmablesearchengine.google.com/")

@@ -236,34 +236,3 @@ def auto_save_recent_memories(
     """
     recent_messages = messages[-recent_n:] if len(messages) > recent_n else messages
     return auto_save_memories(recent_messages, min_importance, verbose)
-
-
-# =============================================================================
-# 테스트 코드
-# =============================================================================
-
-if __name__ == "__main__":
-    print("🧪 Memory Reflection 테스트\n")
-    
-    # 테스트 대화
-    test_conversation = [
-        {"role": "user", "content": "안녕! 내 이름은 김철수야. 컴퓨터공학과 3학년이야."},
-        {"role": "assistant", "content": "안녕하세요 김철수님! 컴퓨터공학과 3학년이시군요. 무엇을 도와드릴까요?"},
-        {"role": "user", "content": "LangGraph에 대해 배우고 싶어. ReAct 패턴이 뭔지 설명해줄래?"},
-        {"role": "assistant", "content": "ReAct 패턴은 Thought(생각) - Action(행동) - Observation(관찰) 순서로 작동하는 AI Agent 방법론입니다. LangGraph는 이러한 패턴을 StateGraph로 구현할 수 있게 해주는 프레임워크입니다."},
-        {"role": "user", "content": "아 이해했어! 이거 기말 프로젝트 주제로 정했어."},
-        {"role": "assistant", "content": "좋은 선택입니다! LangGraph ReAct Agent는 훌륭한 기말 프로젝트 주제입니다."}
-    ]
-    
-    print("📝 테스트 대화:")
-    print("-" * 60)
-    for msg in test_conversation:
-        role = msg["role"]
-        content = msg["content"]
-        print(f"{role.upper()}: {content}")
-    print("-" * 60)
-    
-    # 메모리 자동 저장 테스트
-    saved_count = auto_save_memories(test_conversation, min_importance=1)
-    
-    print(f"\n✅ 테스트 완료! {saved_count}개 메모리 저장됨")

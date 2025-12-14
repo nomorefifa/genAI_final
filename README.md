@@ -72,6 +72,15 @@ GOOGLE_API_KEY = your-google-search-api
 GOOGLE_SEARCH_ENGINE_ID = your-google-search-engine-id
 ```
 
+### 4. Gradio 실행
+```
+가상환경 터미널에:
+uvicorn src.ui.server:app --host 0.0.0.0 --port 7860 --reload
+
+브라우저 주소창에:
+http://localhost:7860/
+```
+
 ## 요구사항
 - Python 3.8+
 - OpenAI API Key
