@@ -63,7 +63,7 @@ pip install -r requirements.txt
 ```
 
 ### 3. 환경 변수 설정
-`.env` 파일 생성:
+`.env` 파일 생성: (팀원들과 공유한 key가 있지만 README.md에는 작성하지 않았습니다.)
 ```
 OPENAI_API_KEY=your-api-key-here
 EMBED_MODEL=text-embedding-3-small
