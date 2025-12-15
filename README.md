@@ -17,36 +17,39 @@ LangGraph + RAG + Memory를 활용한 수업 자료 검색 Agent
 
 ## 프로젝트 구조
 ```
-finalPJ/
-├── src/
-│   ├── graph/              # LangGraph Agent 엔진
-│   │   ├── state.py        # AgentState 정의
-│   │   ├── nodes.py        # LLM, Tool 노드
-│   │   └── agent.py        # StateGraph 생성
-│   │
-│   ├── tools/              # Tool Layer
-│   │   ├── tool_definitions.py  # Pydantic Input Models + ToolSpec
-│   │   ├── tool_registry.py     # ToolRegistry 클래스
-│   │   ├── rag_tool.py          # RAG 검색 (with Reranking)
-│   │   ├── memory_tool.py       # read_memory, write_memory
-│   │   └── google_search_tool.py
-│   │
-│   ├── memory/             # Memory Layer
-│   │   └── reflection.py   # Memory Extractor (자동 저장)
-│   │
-│   ├── rag/                # RAG Layer
-│   │   └── utils.py        # 임베딩 유틸리티
-│   │
-│   └── ui/                 # UI Layer
-│       └── gradio_app.py   # Gradio 채팅 인터페이스
-│
+genAI_final/
 ├── chroma_db/              # ChromaDB Persistent Storage
-│   ├── documents/          # RAG 문서 컬렉션
-│   └── memory_collection/  # Memory 컬렉션
 │
-├── test/                   # ChromaDB Persistent Storage
-    ├── test_integration.py # 통합 테스트
-    └── test_reranking.py   # Reranking 성능 테스트
+├── data/                   # Lab-01-spm-kenlm.pdf 등 강의 pdf 자료
+│
+├── scripts/
+│   └── build_index.py
+│   └── query.py
+│
+└── src/
+    ├── graph/              # LangGraph Agent 엔진
+    │   ├── state.py        # AgentState 정의
+    │   ├── nodes.py        # LLM, Tool 노드
+    │   └── agent.py        # StateGraph 생성
+    │
+    ├── tools/                   # Tool Layer
+    │   ├── tool_definitions.py  # Pydantic Input Models + ToolSpec
+    │   ├── tool_registry.py     # ToolRegistry 클래스
+    │   ├── rag_tool.py          # RAG 검색 (with Reranking)
+    │   ├── memory_tool.py       # read_memory, write_memory
+    │   └── google_search_tool.py
+    │
+    ├── memory/             # Memory Layer
+    │   └── reflection.py   # Memory Extractor (자동 저장)
+    │
+    ├── rag/                # RAG Layer
+    │   └── utils.py        # 임베딩 유틸리티
+    │
+    └── ui/                 # UI Layer
+        └── gradio_app.py   # Gradio 채팅 인터페이스
+        └── server.py       # FastAPI 서버 정의
+
+(chroma_db의 하위 파일, __pycache__ 폴더, __init__.py는 생략함)
 ```
 
 ## 설치 방법
